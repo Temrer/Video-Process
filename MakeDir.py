@@ -2,8 +2,8 @@ import os
 
 path_to_base_folder = r"""J:\Petru\Projects\Results\Vid4\Hands\Movement"""
 folder_name_suffix = "move"
-num_of_folders = 500
-starting_index = 250
+num_of_folders = 200
+starting_index = 750
 
 def make_folders(number_of_folders):
     os.chdir(path_to_base_folder)
