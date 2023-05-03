@@ -1,17 +1,14 @@
 import matplotlib
-matplotlib.use('Qt5Agg')
-
 import matplotlib.pyplot as plt
 import cv2
-import asyncio
 import os
 import re
 from os.path import join
 from time import sleep
 import keyboard
 
-PATH_TO_MOVES = r"""J:\Petru\Projects\Results\Vid4\Hands\Movement"""
-START_INDEX = 20
+PATH_TO_MOVES = r"""D:\Projects\VideoProcess\Resources"""
+START_INDEX = 55
 KEYFRAME_TIME = 0.3
 
 
@@ -80,8 +77,8 @@ def play_video(local_current_index):
 def pyplot(current_index):
     current_path = join(PATH_TO_MOVES, "move" + str(current_index))
     os.chdir(current_path)
-    fig = plt.figure('figure', figsize=(10, 2))
-    fig.canvas.set_window_title("move"+str(current_index))
+    fig = plt.figure(figsize=(10, 2))
+    fig.canvas.manager.set_window_title("move"+str(current_index))
     images = sorted_alphanumeric(os.listdir(current_path))
 
     img1 = cv2.cvtColor(cv2.imread(join(current_path, images[0])), cv2.COLOR_BGR2RGB)
@@ -115,8 +112,11 @@ def pyplot(current_index):
     plt.axis("off")
     plt.title(images[4])
 
+    plt.show(block=False)
     move_figure(fig, 0, 0)
-    fig.show()
+    plt.pause(0.001)
+
+
 
 
 
