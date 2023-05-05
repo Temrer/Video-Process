@@ -6,12 +6,17 @@ import re
 from os.path import join
 from time import sleep
 from threading import Thread, Event
+from global_hotkeys import *
 import keyboard
 
-PATH_TO_MOVES = r"""D:\Projects\VideoProcess\Resources"""
+PATH_TO_MOVES = r"""D:\ada\project\Resources"""
 START_INDEX = 135
 KEYFRAME_TIME = 0.3
 change_event = Event()
+not_running_event = Event()
+
+current_index = START_INDEX
+
 
 
 class Exit(Exception):
@@ -29,12 +34,15 @@ class Previous(Exception):
 class VideoPlayer:
     def __init__(self):
         self.__WorkingThread = None # Thread(name="VideoThread")
+        not_running_event.set()
 
     def __play_vid(self, current_index):
+        not_running_event.clear()
         current_path = join(PATH_TO_MOVES, "move" + str(current_index))
         os.chdir(current_path)
+        continue_cond = True
 
-        while True:
+        while continue_cond:
             for image in sorted_alphanumeric(os.listdir(current_path)):
                 frame = cv2.imread(join(current_path, image))
                 cv2.imshow("video", frame)
@@ -45,11 +53,16 @@ class VideoPlayer:
 
                 if change_event.is_set():
                     cv2.destroyAllWindows()
+                    not_running_event.set()
+                    print('out')
+                    continue_cond = False
                     break
 
     def change_index(self, new_index):
         self.__WorkingThread = Thread(target=self.__play_vid, args=(new_index,), name="VideoThread")
         self.__WorkingThread.start()
+
+v_player = VideoPlayer()
 
 
 def sorted_alphanumeric(data):
@@ -78,6 +91,7 @@ def move_figure(f, x, y):
 def play_video(local_current_index):
     current_path = join(PATH_TO_MOVES, "move"+str(local_current_index))
     os.chdir(current_path)
+    print('next')
 
     while True:
         for image in sorted_alphanumeric(os.listdir(current_path)):
@@ -145,37 +159,74 @@ def pyplot(current_index):
     plt.pause(0.001)
 
 
+def show_imgs(current_index):
+    plt.close('all')
+    change_event.set()
+    print(not_running_event.is_set())
+    not_running_event.wait()
+    change_event.clear()
+    pyplot(current_index)
+    v_player.change_index(current_index)
 
+
+def nextf():
+    global current_index
+    current_index += 1
+    if os.listdir(join(PATH_TO_MOVES, "move" + str(current_index))):
+        show_imgs(current_index)
+    else:
+        nextf()
+
+def prevf():
+    global current_index
+    current_index -= 1
+    if os.listdir(join(PATH_TO_MOVES, "move" + str(current_index))):
+        show_imgs(current_index)
+    else:
+        prevf()
+
+
+bindings = [
+    [["f3"], None, prevf],
+    [["f9"], None, nextf]
+]
+register_hotkeys(bindings)
 
 
 
 def main():
-    current_index = START_INDEX
     continue_condition = True
     previous_input = None
-    while continue_condition:
-        if os.listdir(join(PATH_TO_MOVES, "move" + str(current_index))):
-            pyplot(current_index)
-            try:
-                play_video(current_index)
-            except Exit:
-                continue_condition = False
-            except Next:
-                cv2.destroyAllWindows()
-                plt.close('all')
-                current_index += 1
-                previous_input = Next
-            except Previous:
-                cv2.destroyAllWindows()
-                plt.close('all')
-                current_index -= 1
-                previous_input = Previous
-        elif previous_input == Previous:
-            current_index -= 1
-        else:
-            current_index += 1
+    # while True:
+    #     keyboard.unhook_all()
+    start_checking_hotkeys()
+
+
+    keyboard.wait()
+    # while continue_condition:
+    #     if os.listdir(join(PATH_TO_MOVES, "move" + str(current_index))):
+    #         pyplot(current_index)
+    #         try:
+    #             play_video(current_index)
+    #         except Exit:
+    #             continue_condition = False
+    #         except Next:
+    #             cv2.destroyAllWindows()
+    #             plt.close('all')
+    #             current_index += 1
+    #             previous_input = Next
+    #         except Previous:
+    #             cv2.destroyAllWindows()
+    #             plt.close('all')
+    #             current_index -= 1
+    #             previous_input = Previous
+    #     elif previous_input == Previous:
+    #         current_index -= 1
+    #     else:
+    #         current_index += 1
 
 
 
 
 main()
+print('exit')
