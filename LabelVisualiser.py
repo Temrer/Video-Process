@@ -5,11 +5,13 @@ import os
 import re
 from os.path import join
 from time import sleep
+from threading import Thread, Event
 import keyboard
 
 PATH_TO_MOVES = r"""D:\Projects\VideoProcess\Resources"""
-START_INDEX = 55
+START_INDEX = 135
 KEYFRAME_TIME = 0.3
+change_event = Event()
 
 
 class Exit(Exception):
@@ -22,6 +24,32 @@ class Next(Exception):
 
 class Previous(Exception):
     pass
+
+
+class VideoPlayer:
+    def __init__(self):
+        self.__WorkingThread = None # Thread(name="VideoThread")
+
+    def __play_vid(self, current_index):
+        current_path = join(PATH_TO_MOVES, "move" + str(current_index))
+        os.chdir(current_path)
+
+        while True:
+            for image in sorted_alphanumeric(os.listdir(current_path)):
+                frame = cv2.imread(join(current_path, image))
+                cv2.imshow("video", frame)
+                cv2.setWindowProperty("video", cv2.WND_PROP_TOPMOST, 1)
+                k = cv2.waitKey(5)
+
+                sleep(KEYFRAME_TIME)
+
+                if change_event.is_set():
+                    cv2.destroyAllWindows()
+                    break
+
+    def change_index(self, new_index):
+        self.__WorkingThread = Thread(target=self.__play_vid, args=(new_index,), name="VideoThread")
+        self.__WorkingThread.start()
 
 
 def sorted_alphanumeric(data):
