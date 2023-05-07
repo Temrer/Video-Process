@@ -8,14 +8,18 @@ from time import sleep
 from threading import Thread, Event
 from global_hotkeys import *
 import keyboard
+import ctypes
 
-PATH_TO_MOVES = r"""D:\ada\project\Resources"""
-START_INDEX = 135
+
+PATH_TO_MOVES = r"""J:\Petru\Projects\Results\Vid4\Hands\Movement"""
+START_INDEX = 470
 KEYFRAME_TIME = 0.3
 change_event = Event()
 not_running_event = Event()
+plot_photos = Event()
 
 current_index = START_INDEX
+main_loop = True
 
 
 
@@ -31,18 +35,23 @@ class Previous(Exception):
     pass
 
 
+def Mbox(title, text, style):
+    return ctypes.windll.user32.MessageBoxW(0, text, title, style)
+
+
 class VideoPlayer:
     def __init__(self):
         self.__WorkingThread = None # Thread(name="VideoThread")
         not_running_event.set()
+        self.__continue_cond = True
 
     def __play_vid(self, current_index):
         not_running_event.clear()
         current_path = join(PATH_TO_MOVES, "move" + str(current_index))
         os.chdir(current_path)
-        continue_cond = True
+        self.__continue_cond = True
 
-        while continue_cond:
+        while self.__continue_cond:
             for image in sorted_alphanumeric(os.listdir(current_path)):
                 frame = cv2.imread(join(current_path, image))
                 cv2.imshow("video", frame)
@@ -54,13 +63,15 @@ class VideoPlayer:
                 if change_event.is_set():
                     cv2.destroyAllWindows()
                     not_running_event.set()
-                    print('out')
-                    continue_cond = False
+                    self.__continue_cond = False
                     break
 
     def change_index(self, new_index):
         self.__WorkingThread = Thread(target=self.__play_vid, args=(new_index,), name="VideoThread")
         self.__WorkingThread.start()
+
+    def stop(self):
+        self.__continue_cond = False
 
 v_player = VideoPlayer()
 
@@ -91,7 +102,6 @@ def move_figure(f, x, y):
 def play_video(local_current_index):
     current_path = join(PATH_TO_MOVES, "move"+str(local_current_index))
     os.chdir(current_path)
-    print('next')
 
     while True:
         for image in sorted_alphanumeric(os.listdir(current_path)):
@@ -156,16 +166,15 @@ def pyplot(current_index):
 
     plt.show(block=False)
     move_figure(fig, 0, 0)
-    plt.pause(0.001)
+    plt.pause(0.02)
 
 
 def show_imgs(current_index):
-    plt.close('all')
     change_event.set()
-    print(not_running_event.is_set())
     not_running_event.wait()
     change_event.clear()
-    pyplot(current_index)
+    plot_photos.set()
+
     v_player.change_index(current_index)
 
 
@@ -175,6 +184,7 @@ def nextf():
     if os.listdir(join(PATH_TO_MOVES, "move" + str(current_index))):
         show_imgs(current_index)
     else:
+        Mbox('Warning', 'A folder without content has been skipped\n( move'+str(current_index)+" )", 0)
         nextf()
 
 def prevf():
@@ -183,12 +193,22 @@ def prevf():
     if os.listdir(join(PATH_TO_MOVES, "move" + str(current_index))):
         show_imgs(current_index)
     else:
+        Mbox('Warning', 'A folder without content has been skipped\n( move' + str(current_index) + " )", 0)
         prevf()
+
+def Exitf():
+    global main_loop
+    main_loop = False
+    v_player.stop()
+    stop_checking_hotkeys()
+    plot_photos.set()
+
 
 
 bindings = [
     [["f3"], None, prevf],
-    [["f9"], None, nextf]
+    [["f9"], None, nextf],
+    [["escape"], None, Exitf]
 ]
 register_hotkeys(bindings)
 
@@ -200,9 +220,17 @@ def main():
     # while True:
     #     keyboard.unhook_all()
     start_checking_hotkeys()
+    plot_photos.clear()
+
+    while True:
+        plot_photos.wait()
+        if not main_loop:
+            break
+        plot_photos.clear()
+        plt.close('all')
+        pyplot(current_index)
 
 
-    keyboard.wait()
     # while continue_condition:
     #     if os.listdir(join(PATH_TO_MOVES, "move" + str(current_index))):
     #         pyplot(current_index)
@@ -227,6 +255,7 @@ def main():
 
 
 
-
+print('start')
+print("please press f3 or f9")
 main()
 print('exit')
