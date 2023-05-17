@@ -7,12 +7,11 @@ from os.path import join
 from time import sleep
 from threading import Thread, Event
 from global_hotkeys import *
-import keyboard
 import ctypes
 
 
 PATH_TO_MOVES = r"""J:\Petru\Projects\Results\Vid4\Hands\Movement"""
-START_INDEX = 470
+START_INDEX = 80
 KEYFRAME_TIME = 0.3
 change_event = Event()
 not_running_event = Event()
@@ -117,12 +116,6 @@ def play_video(local_current_index):
             #
             # elif k == 97:
             #     raise Previous
-            if keyboard.is_pressed('f9'):
-                raise Next
-            elif keyboard.is_pressed('esc'):
-                raise Exit
-            elif keyboard.is_pressed('f3'):
-                raise Previous
             sleep(KEYFRAME_TIME)
 
 
